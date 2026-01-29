@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>封筒宛名印刷システム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-8">
+    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+        <h1 class="text-2xl font-bold mb-6 border-b pb-2">封筒宛名印刷設定</h1>
+
+        <!-- スプレッドシート情報 -->
+        <div class="mb-6">
+            <h2 class="text-sm font-semibold text-gray-600 mb-2">1. Googleスプレッドシート設定</h2>
+            <input type="text" id="spreadsheet_id" placeholder="スプレッドシートIDを入力" class="w-full p-2 border rounded mb-2">
+            <input type="text" id="sheet_name" placeholder="シート名 (例: Sheet1)" class="w-full p-2 border rounded">
+        </div>
+
+        <!-- 印刷範囲 -->
+        <div class="mb-6">
+            <h2 class="text-sm font-semibold text-gray-600 mb-2">2. 印刷範囲指定</h2>
+            <div class="flex items-center gap-2">
+                <input type="number" id="start_row" value="2" class="w-20 p-2 border rounded"> 行目から
+                <input type="number" id="end_row" value="10" class="w-20 p-2 border rounded"> 行目まで
+            </div>
+        </div>
+
+        <!-- 列指定 (col_map) -->
+        <div class="mb-6">
+            <h2 class="text-sm font-semibold text-gray-600 mb-2">3. 列の割り当て (A列=0, B列=1...)</h2>
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs">氏名(様)</label>
+                    <select id="col_name" class="w-full p-2 border rounded">
+                        <option value="0">A列</option><option value="1">B列</option>
+                        <option value="2" selected>C列</option><option value="3">D列</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs">住所</label>
+                    <select id="col_address" class="w-full p-2 border rounded">
+                        <option value="0">A列</option><option value="1" selected>B列</option>
+                        <option value="2">C列</option><option value="3">D列</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs">郵便番号</label>
+                    <select id="col_zip" class="w-full p-2 border rounded">
+                        <option value="0" selected>A列</option><option value="1">B列</option>
+                        <option value="2">C列</option><option value="3">D列</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 封筒・差出人 -->
+        <div class="mb-6 bg-gray-100 p-4 rounded">
+            <h2 class="text-sm font-semibold text-gray-600 mb-2">4. 印刷・レイアウト設定</h2>
+            <select id="env_size" class="w-full p-2 border rounded mb-4">
+                <option value="NAGA3">長形3号 (120 x 235mm)</option>
+                <option value="KAKU2">角形2号 (240 x 332mm)</option>
+            </select>
+            
+            <label class="flex items-center gap-2 mb-2">
+                <input type="checkbox" id="show_sender" checked> 差出人を表示する
+            </label>
+            <textarea id="sender_info" class="w-full p-2 border rounded text-sm" rows="3">〒123-4567 東京都... 〇〇株式会社</textarea>
+        </div>
+
+        <button onclick="generatePDF()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">
+            PDFを生成してダウンロード
+        </button>
+    </div>
+
+    <script>
+        async function generatePDF() {
+            // 入力値の収集
+            const data = {
+                spreadsheet_id: document.getElementById('spreadsheet_id').value,
+                sheet_name: document.getElementById('sheet_name').value,
+                start_row: document.getElementById('start_row').value,
+                end_row: document.getElementById('end_row').value,
+                col_map: {
+                    name: parseInt(document.getElementById('col_name').value),
+                    address: parseInt(document.getElementById('col_address').value),
+                    zip: parseInt(document.getElementById('col_zip').value)
+                },
+                env_size: document.getElementById('env_size').value,
+                show_sender: document.getElementById('show_sender').checked,
+                sender_info: document.getElementById('sender_info').value
+            };
+
+            // Flaskへの送信処理 (前回解説した request.json に届く)
+            const response = await fetch('/fetch_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                // PDFを受け取ってダウンロードさせる処理 (Blob)
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "labels.pdf";
+                a.click();
+            } else {
+                alert("エラーが発生しました。");
+            }
+        }
+    </script>
+</body>
+</html>
