@@ -12,8 +12,8 @@
         <!-- スプレッドシート情報 -->
         <div class="mb-6">
             <h2 class="text-sm font-semibold text-gray-600 mb-2">1. Googleスプレッドシート設定</h2>
-            <input type="text" id="spreadsheet_id" placeholder="スプレッドシートIDを入力" class="w-full p-2 border rounded mb-2">
-            <input type="text" id="sheet_name" placeholder="シート名 (例: Sheet1)" class="w-full p-2 border rounded">
+            <input type="text" id="spreadsheet_url" value="デバッグ用仮置きURL//docs.google.com/spreadsheets/d/1JkXjOgzII2-XkB6XUEBGyQ2w9g96jLkHyVfQb4BsIeA/edit?gid=0#gid=0" placeholder="スプレッドシートのURLを入力" class="w-full p-2 border rounded mb-2">
+            <input type="text" id="sheet_name" value="シート1" placeholder="シート名 (例: Sheet1)" class="w-full p-2 border rounded">
         </div>
 
         <!-- 印刷範囲 -->
@@ -32,8 +32,8 @@
                 <div>
                     <label class="block text-xs">氏名(様)</label>
                     <select id="col_name" class="w-full p-2 border rounded">
-                        <option value="0">A列</option><option value="1">B列</option>
-                        <option value="2" selected>C列</option><option value="3">D列</option>
+                        <option value="0" selected>A列</option><option value="1">B列</option>
+                        <option value="2">C列</option><option value="3">D列</option>
                     </select>
                 </div>
                 <div>
@@ -44,10 +44,17 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs">郵便番号</label>
-                    <select id="col_zip" class="w-full p-2 border rounded">
-                        <option value="0" selected>A列</option><option value="1">B列</option>
-                        <option value="2">C列</option><option value="3">D列</option>
+                    <label class="block text-xs">社名</label>
+                    <select id="col_company" class="w-full p-2 border rounded">
+                        <option value="0">A列</option><option value="1">B列</option>
+                        <option value="2" selected>C列</option><option value="3">D列</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs">肩書</label>
+                    <select id="col_title" class="w-full p-2 border rounded">
+                        <option value="0">A列</option><option value="1">B列</option>
+                        <option value="2">C列</option><option value="3" selected>D列</option>
                     </select>
                 </div>
             </div>
@@ -68,22 +75,34 @@
         </div>
 
         <button onclick="generatePDF()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">
-            PDFを生成してダウンロード
+            PDFを生成してプレビュー
         </button>
+
+        <div id="preview_container" class="mt-8 hidden">
+            <h2 class="text-sm font-semibold text-gray-600 mb-2">プレビュー (別画面で開く場合はブラウザの機能を使用してください)</h2>
+            <iframe id="pdf_preview" class="w-full h-[600px] border rounded shadow-inner"></iframe>
+        </div>
     </div>
 
     <script>
         async function generatePDF() {
+            console.log("DEBUG : index.html generatePDF");
             // 入力値の収集
+            const url = document.getElementById('spreadsheet_url').value;
+            const splitedURL = url.split('/');
+            const spreadsheetID = splitedURL[5];
+            console.log(`debug : spreadsheetID = ${spreadsheetID}`)
+            
             const data = {
-                spreadsheet_id: document.getElementById('spreadsheet_id').value,
+                spreadsheet_id: spreadsheetID,
                 sheet_name: document.getElementById('sheet_name').value,
                 start_row: document.getElementById('start_row').value,
                 end_row: document.getElementById('end_row').value,
                 col_map: {
                     name: parseInt(document.getElementById('col_name').value),
                     address: parseInt(document.getElementById('col_address').value),
-                    zip: parseInt(document.getElementById('col_zip').value)
+                    company: parseInt(document.getElementById('col_company').value),
+                    title: parseInt(document.getElementById('col_title').value)
                 },
                 env_size: document.getElementById('env_size').value,
                 show_sender: document.getElementById('show_sender').checked,
@@ -98,16 +117,19 @@
             });
 
             if (response.ok) {
-                // PDFを受け取ってダウンロードさせる処理 (Blob)
+                console.log("debug : index.html generatePDF if response.ok");
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = "labels.pdf";
-                a.click();
+                
+                // プレビュー表示
+                const previewContainer = document.getElementById('preview_container');
+                const iframe = document.getElementById('pdf_preview');
+                previewContainer.classList.remove('hidden');
+                iframe.src = url; // iframeにPDFを表示
             } else {
                 alert("エラーが発生しました。");
             }
+            console.log("END : index.html generatePDF");
         }
     </script>
 </body>
