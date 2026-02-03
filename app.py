@@ -16,7 +16,7 @@ pdfmetrics.registerFont(TTFont(font_name,font_path))
 
 ##sheet id 1JkXjOgzII2-XkB6XUEBGyQ2w9g96jLkHyVfQb4BsIeA
 app = Flask(__name__)
-KEY_FILE = 'atenagaki-c787416ab74f.json'
+KEY_FILE = r'key\atenagaki-5ff2e53418b1.json'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
 size_dic = {
@@ -122,7 +122,11 @@ def fetch_data():
         )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+            # 詳細なエラー内容をプリントする
+            print("---------- ERROR DETAILS ----------")
+            print(e)
+            print("-----------------------------------")
+            return jsonify({"error": str(e)}), 500
     
 def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
     """

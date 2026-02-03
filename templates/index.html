@@ -27,35 +27,23 @@
 
         <!-- 列指定 (col_map) -->
         <div class="mb-6">
-            <h2 class="text-sm font-semibold text-gray-600 mb-2">3. 列の割り当て (A列=0, B列=1...)</h2>
-            <div class="grid grid-cols-3 gap-4">
+            <h2 class="text-sm font-semibold text-gray-600 mb-2">3. 列の割り当て,半角アルファベット (A, B, C...)</h2>
+            <div class="grid grid-cols-4 gap-4">
                 <div>
                     <label class="block text-xs">氏名(様)</label>
-                    <select id="col_name" class="w-full p-2 border rounded">
-                        <option value="0" selected>A列</option><option value="1">B列</option>
-                        <option value="2">C列</option><option value="3">D列</option>
-                    </select>
+                    <input type="text" id="col_name" value="A" class="w-full p-2 border rounded uppercase text-center" placeholder="C">
                 </div>
                 <div>
                     <label class="block text-xs">住所</label>
-                    <select id="col_address" class="w-full p-2 border rounded">
-                        <option value="0">A列</option><option value="1" selected>B列</option>
-                        <option value="2">C列</option><option value="3">D列</option>
-                    </select>
+                    <input type="text" id="col_address" value="B" class="w-full p-2 border rounded uppercase text-center" placeholder="B">
                 </div>
                 <div>
                     <label class="block text-xs">社名</label>
-                    <select id="col_company" class="w-full p-2 border rounded">
-                        <option value="0">A列</option><option value="1">B列</option>
-                        <option value="2" selected>C列</option><option value="3">D列</option>
-                    </select>
+                    <input type="text" id="col_company" value="C" class="w-full p-2 border rounded uppercase text-center" placeholder="A">
                 </div>
                 <div>
                     <label class="block text-xs">肩書</label>
-                    <select id="col_title" class="w-full p-2 border rounded">
-                        <option value="0">A列</option><option value="1">B列</option>
-                        <option value="2">C列</option><option value="3" selected>D列</option>
-                    </select>
+                    <input type="text" id="col_title" value="D" class="w-full p-2 border rounded uppercase text-center" placeholder="A">
                 </div>
             </div>
         </div>
@@ -85,31 +73,49 @@
     </div>
 
     <script>
+        // アルファベットを数値に変換する関数 (A->0, B->1, AA->26...)
+        function columnLetterToIndex(letter) {
+            if (!letter) return 0;
+            let column = 0;
+            let str = letter.toUpperCase();
+            for (let i = 0; i < str.length; i++) {
+                column = column * 26 + (str.charCodeAt(i) - 64);
+            }
+            console.log(`DEBUG : ${letter} => ${column - 1}`)
+            return column - 1; // 0-indexedにする
+        }
+
         async function generatePDF() {
             console.log("DEBUG : index.html generatePDF");
-            // 入力値の収集
-            const url = document.getElementById('spreadsheet_url').value;
-            const splitedURL = url.split('/');
-            const spreadsheetID = splitedURL[5];
-            console.log(`debug : spreadsheetID = ${spreadsheetID}`)
             
+            // document のスペルミスも修正済み
+            const url = document.getElementById('spreadsheet_url').value;
+            const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/); // 正規表現でIDを抽出
+            const spreadsheetID = match ? match[1] : null;
+            console.log(`DEBUG : \n url = ${url}\n match = ${match}\n spreadsheetID = ${spreadsheetID}`)
+            if (!spreadsheetID) {
+                alert("スプレッドシートのURLが正しくありません。");
+                return;
+            }
+
             const data = {
                 spreadsheet_id: spreadsheetID,
                 sheet_name: document.getElementById('sheet_name').value,
-                start_row: document.getElementById('start_row').value,
-                end_row: document.getElementById('end_row').value,
+                start_row: parseInt(document.getElementById('start_row').value),
+                end_row: parseInt(document.getElementById('end_row').value),
                 col_map: {
-                    name: parseInt(document.getElementById('col_name').value),
-                    address: parseInt(document.getElementById('col_address').value),
-                    company: parseInt(document.getElementById('col_company').value),
-                    title: parseInt(document.getElementById('col_title').value)
+                    // ここで変換関数を通す
+                    name: columnLetterToIndex(document.getElementById('col_name').value),
+                    address: columnLetterToIndex(document.getElementById('col_address').value),
+                    company: columnLetterToIndex(document.getElementById('col_company').value),
+                    title: columnLetterToIndex(document.getElementById('col_title').value)
                 },
                 env_size: document.getElementById('env_size').value,
                 show_sender: document.getElementById('show_sender').checked,
                 sender_info: document.getElementById('sender_info').value
             };
 
-            // Flaskへの送信処理 (前回解説した request.json に届く)
+            // 以降の fetch 処理は同じ
             const response = await fetch('/fetch_data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -117,19 +123,17 @@
             });
 
             if (response.ok) {
-                console.log("debug : index.html generatePDF if response.ok");
                 const blob = await response.blob();
                 const url = window.URL.createObjectURL(blob);
-                
-                // プレビュー表示
                 const previewContainer = document.getElementById('preview_container');
                 const iframe = document.getElementById('pdf_preview');
                 previewContainer.classList.remove('hidden');
                 iframe.src = url; // iframeにPDFを表示
             } else {
-                alert("エラーが発生しました。");
+                // 修正：サーバーから返ってきたエラーメッセージを表示する
+                const errorData = await response.json();
+                alert("エラーが発生しました: " + errorData.error);
             }
-            console.log("END : index.html generatePDF");
         }
     </script>
 </body>
