@@ -6,7 +6,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 p-8">
-    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-md">
         <h1 class="text-2xl font-bold mb-6 border-b pb-2">封筒宛名印刷設定</h1>
         <h2 class="text-sm font-semibold text-black-600 mb-2">スプレッドシートをサービスアカウント「atenagaki@atenagaki.iam.gserviceaccount.com」に共有するか、<br>一般的なアクセスを「リンクを知っている人全員」にしてください。</h2>
         <img class="fit-picture" src="{{ url_for('static', filename='image.png') }}"
@@ -87,7 +87,7 @@
 
         <div id="preview_container" class="mt-8 hidden">
             <h2 class="text-sm font-semibold text-gray-600 mb-2">プレビュー (別画面で開く場合はブラウザの機能を使用してください)</h2>
-            <iframe id="pdf_preview" class="w-full h-[600px] border rounded shadow-inner"></iframe>
+            <iframe id="pdf_preview" class="w-full h-[1200px] border rounded shadow-inner"></iframe>
         </div>
     </div>
 
