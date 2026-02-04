@@ -81,6 +81,10 @@
             PDFを生成してプレビュー
         </button>
 
+        <div id="message_container" class="mt-8 hidden">
+            <h2 class="text-2xl font-bold mb-6 border-b pb-2">PDF作成中・・・</h2>
+        </div>
+
         <div id="preview_container" class="mt-8 hidden">
             <h2 class="text-sm font-semibold text-gray-600 mb-2">プレビュー (別画面で開く場合はブラウザの機能を使用してください)</h2>
             <iframe id="pdf_preview" class="w-full h-[600px] border rounded shadow-inner"></iframe>
@@ -102,6 +106,8 @@
 
         async function generatePDF() {
             console.log("DEBUG : index.html generatePDF");
+            const messageContainer = document.getElementById('message_container');
+            messageContainer.classList.remove('hidden');
             
             // document のスペルミスも修正済み
             const url = document.getElementById('spreadsheet_url').value;
@@ -151,6 +157,7 @@
                 const errorData = await response.json();
                 alert("エラーが発生しました: " + errorData.error);
             }
+            messageContainer.classList.add('hidden');
         }
     </script>
 </body>
