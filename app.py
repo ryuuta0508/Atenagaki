@@ -46,6 +46,7 @@ def fetch_data():
         "end_row": 10,
         "col_map": {"name": 0, "address": 1, "company": 2, "department":3,"post":4}
         "env_size": NAGA3 $$ KAKU2
+        "font_size_magnification": 1~500
     }
     """
     print("DEBUG : app.py fetch_data")
@@ -57,6 +58,7 @@ def fetch_data():
     end_row = int(req.get('end_row', 100))
     col_map = req.get('col_map') # {"name": 0, "address": 1, "company": 2, "department":3, "post":4} 形式
     size_tup = size_dic[req.get('env_size')]
+    font_size_magni = float(req.get('font_size_magnification')) / 100
 
     try:
         service = get_sheets_service()
@@ -105,6 +107,8 @@ def fetch_data():
             # 右に会社名を書く
             # 右端に住所を書く
 
+            print(f"fontsizemagnification : {font_size_magni}")
+
             #役職名
             #4文字以下 => 名前の上
             #5文字以上 => 名前の右
@@ -115,7 +119,7 @@ def fetch_data():
                             size_tup[0]//24*12,
                             size_tup[1]//24*20,
                             font_name,
-                            20
+                            20* font_size_magni
                             ) 
                 #名前
                 result = draw_vertical_text(
@@ -124,7 +128,7 @@ def fetch_data():
                             size_tup[0]//24*12,
                             result[1] - result[2],
                             font_name,
-                            50
+                            50* font_size_magni
                             )
             else:
                 #名前
@@ -134,7 +138,7 @@ def fetch_data():
                             size_tup[0]//24*12,
                             size_tup[1]//24*18,
                             font_name,
-                            50
+                            50* font_size_magni
                                 )
                 #役職
                 result = draw_vertical_text(
@@ -143,7 +147,7 @@ def fetch_data():
                             result[0],
                             size_tup[1]//24*20,
                             font_name,
-                            20
+                            20* font_size_magni
                             )
 
             #部署名
@@ -153,7 +157,7 @@ def fetch_data():
                         result[0],
                         size_tup[1]//24*19,
                         font_name,
-                        20
+                        20* font_size_magni
                         )
             #会社名
             result = draw_vertical_text(
@@ -162,7 +166,7 @@ def fetch_data():
                         result[0] + result[2]//2,
                         size_tup[1]//24*20,
                         font_name,
-                        25
+                        25* font_size_magni
                         )
             
             #住所
@@ -172,7 +176,7 @@ def fetch_data():
                         size_tup[0]//24*22,
                         size_tup[1]//24*21 + result[2],
                         font_name,
-                        20
+                        20* font_size_magni
                         )
 
             c.showPage()

@@ -8,12 +8,12 @@
 <body class="bg-gray-50 p-8">
     <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-md">
         <h1 class="text-2xl font-bold mb-6 border-b pb-2">封筒宛名印刷設定</h1>
-        <h2 class="text-sm font-semibold text-gray-600 mb-2">スプレッドシートをサービスアカウント「atenagaki@atenagaki.iam.gserviceaccount.com」に共有するか、<br>一般的なアクセスを「リンクを知っている人全員」にしてください。</h2>
+        <h2 class="text-sm font-semibold text-black-600 mb-2">スプレッドシートをサービスアカウント「atenagaki@atenagaki.iam.gserviceaccount.com」に共有するか、<br>一般的なアクセスを「リンクを知っている人全員」にしてください。</h2>
         <img class="fit-picture" src="{{ url_for('static', filename='image.png') }}"
         width="50%" height="50%"/>
         <!-- スプレッドシート情報 -->
         <div class="mb-6">
-            <h2 class="text-sm font-semibold text-gray-600 mb-2">1. Googleスプレッドシート設定</h2>
+            <h2 class="text-sm font-bold text-gray-600 mb-2">1. Googleスプレッドシート設定</h2>
             <input type="text" id="spreadsheet_url" value="デバッグ用仮置きURL//docs.google.com/spreadsheets/d/1JkXjOgzII2-XkB6XUEBGyQ2w9g96jLkHyVfQb4BsIeA/edit?gid=0#gid=0" placeholder="スプレッドシートのURLを入力" class="w-full p-2 border rounded mb-2">
             <input type="text" id="sheet_name" value="シート1" placeholder="シート名 (例: Sheet1)" class="w-full p-2 border rounded">
         </div>
@@ -27,11 +27,10 @@
             </div>
         </div>
 
-
         <!-- 列指定 (col_map) -->
         <div class="mb-6">
             <h2 class="text-sm font-semibold text-gray-600 mb-2">3. 列の割り当て,半角アルファベット (A, B, C...)</h2>
-            <div class="grid grid-cols-4 gap-4">
+            <div class="grid grid-cols-5 gap-2">
                 <div>
                     <label class="block text-xs">氏名</label>
                     <input type="text" id="col_name" value="A" class="w-full p-2 border rounded uppercase text-center" placeholder="A">
@@ -62,6 +61,15 @@
                 <option value="NAGA3">長形3号 (120 x 235mm)</option>
                 <option value="KAKU2">角形2号 (240 x 332mm)</option>
             </select>
+
+        <!-- 文字サイズ倍率 -->
+        <div class="mb6 flex grid grid-cols-5">
+            <div>
+                <label class="block text-xs">文字サイズ倍率(%)</label>
+                <input type="number" id="char_size_magni" value="100" class="w-full p-2 border text-center rounded" value="100" min="1" max="500">
+            </div>
+        </div>
+        <div>
             
             <label class="flex items-center gap-2 mb-2">
                 <input type="checkbox" id="show_sender" checked> 差出人を表示する
@@ -119,6 +127,7 @@
                     post: columnLetterToIndex(document.getElementById('col_post').value)
                 },
                 env_size: document.getElementById('env_size').value,
+                font_size_magnification: parseFloat(document.getElementById('char_size_magni').value),
                 show_sender: document.getElementById('show_sender').checked,
                 sender_info: document.getElementById('sender_info').value
             };
