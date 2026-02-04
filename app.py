@@ -95,68 +95,85 @@ def fetch_data():
 
         for item in print_data:
             # --- 描画ロジック
-
-
-            #住所 
-            draw_vertical_text(
-                c,
-                convert_digit_h2k("　" + item["address"]),
-                size_tup[0]//24*22,
-                size_tup[1]//24*22,
-                font_name,
-                20
-                )      
-                  
-            #社名
-            draw_vertical_text(
-                c,
-                item["company"],
-                size_tup[0]//24*18,
-                size_tup[1]//24*20,
-                font_name,
-                25
-                )
-
-            #部署
-            draw_vertical_text(
-                c,
-                item["department"],
-                size_tup[0]//24*16,
-                size_tup[1]//24*18,
-                font_name,
-                20
-                )
+            # もし[役職の文字数] <= 4
+            # ・中央に役職を書く＝＞ケツのY座標取得
+            # ・役職の下に名前を書く＝＞右隣のX座標を取得
+            # でなければ
+            # ・中央に名前を書く＝＞右隣のX座標を取得
+            # ・名前の右に役職を書く＝＞右隣のX座標を取得
+            # 右に部署名を書く＝＞右隣のX座標を取得
+            # 右に会社名を書く
+            # 右端に住所を書く
 
             #役職名
             #4文字以下 => 名前の上
             #5文字以上 => 名前の右
             if len(item["post"]) <= 4:
-                post_lastY = draw_vertical_text(c,
-                                item["post"],
-                                size_tup[0]//24*11,
-                                size_tup[1]//24*20,
-                                font_name,
-                                20
-                                ) 
+                #役職
+                result = draw_vertical_text(c,
+                            item["post"],
+                            size_tup[0]//24*12,
+                            size_tup[1]//24*20,
+                            font_name,
+                            20
+                            ) 
+                #名前
+                result = draw_vertical_text(
+                            c,
+                            item["name"] + "様",
+                            size_tup[0]//24*12,
+                            result[1] - result[2],
+                            font_name,
+                            50
+                            )
             else:
-                draw_vertical_text(
-                    c,
-                    item["post"],
-                    size_tup[0]//24*14,
-                    size_tup[1]//24*20,
-                    font_name,
-                    20
-                    ) 
+                #名前
+                result = draw_vertical_text(
+                            c,
+                            item["name"] + "様",
+                            size_tup[0]//24*12,
+                            size_tup[1]//24*18,
+                            font_name,
+                            50
+                                )
+                #役職
+                result = draw_vertical_text(
+                            c,
+                            item["post"],
+                            result[0],
+                            size_tup[1]//24*20,
+                            font_name,
+                            20
+                            )
+
+            #部署名
+            result = draw_vertical_text(
+                        c,
+                        item["department"],
+                        result[0],
+                        size_tup[1]//24*19,
+                        font_name,
+                        20
+                        )
+            #会社名
+            result = draw_vertical_text(
+                        c,
+                        item["company"],
+                        result[0] + result[2]//2,
+                        size_tup[1]//24*20,
+                        font_name,
+                        25
+                        )
             
-            #名前
-            draw_vertical_text(
-                c,
-                item["name"] + "様",
-                size_tup[0]//24*11,
-                post_lastY,
-                font_name,
-                50
-                )
+            #住所
+            result = draw_vertical_text(
+                        c,
+                        convert_digit_h2k(item["address"]),
+                        size_tup[0]//24*22,
+                        size_tup[1]//24*21 + result[2],
+                        font_name,
+                        20
+                        )
 
             c.showPage()
             
@@ -184,12 +201,13 @@ def convert_digit_h2z(text:str):
 
     return text.translate(trans_table)
 
-def convert_digit_h2k(text:str):
+def convert_digit_h2k(input:str):
     """
-    半角数字を漢数字に変換
+    全角数字を漢数字に変換
     """
-    trans_table = str.maketrans("0123456789","〇一二三四五六七八九")
+    trans_table = str.maketrans("０１２３４５６７８９","〇一二三四五六七八九")
 
+    text = convert_digit_h2z(input)
     return text.translate(trans_table)
 
 def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
@@ -238,7 +256,7 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
             c.drawString(offset_x, current_y, char)
         # Y座標を次に進める（ReportLabは下が0なのでマイナスする）
         current_y -= char_step
-    return current_y - char_step
+    return x + sample_width, current_y - char_step, sample_width
 
 
 if __name__ == '__main__':
