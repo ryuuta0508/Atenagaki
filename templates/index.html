@@ -32,8 +32,8 @@
             <h2 class="text-sm font-semibold text-gray-600 mb-2">3. 列の割り当て,半角アルファベット (A, B, C...)</h2>
             <div class="grid grid-cols-4 gap-4">
                 <div>
-                    <label class="block text-xs">氏名(様)</label>
-                    <input type="text" id="col_name" value="A" class="w-full p-2 border rounded uppercase text-center" placeholder="C">
+                    <label class="block text-xs">氏名</label>
+                    <input type="text" id="col_name" value="A" class="w-full p-2 border rounded uppercase text-center" placeholder="A">
                 </div>
                 <div>
                     <label class="block text-xs">住所</label>
@@ -41,11 +41,15 @@
                 </div>
                 <div>
                     <label class="block text-xs">社名</label>
-                    <input type="text" id="col_company" value="C" class="w-full p-2 border rounded uppercase text-center" placeholder="A">
+                    <input type="text" id="col_company" value="C" class="w-full p-2 border rounded uppercase text-center" placeholder="C">
                 </div>
                 <div>
-                    <label class="block text-xs">肩書</label>
-                    <input type="text" id="col_title" value="D" class="w-full p-2 border rounded uppercase text-center" placeholder="A">
+                    <label class="block text-xs">部署</label>
+                    <input type="text" id="col_department" value="D" class="w-full p-2 border rounded uppercase text-center" placeholder="D">
+                </div>
+                <div>
+                    <label class="block text-xs">役職</label>
+                    <input type="text" id="col_post" value="E" class="w-full p-2 border rounded uppercase text-center" placeholder="E">
                 </div>
             </div>
         </div>
@@ -110,7 +114,8 @@
                     name: columnLetterToIndex(document.getElementById('col_name').value),
                     address: columnLetterToIndex(document.getElementById('col_address').value),
                     company: columnLetterToIndex(document.getElementById('col_company').value),
-                    title: columnLetterToIndex(document.getElementById('col_title').value)
+                    department: columnLetterToIndex(document.getElementById('col_department').value),
+                    post: columnLetterToIndex(document.getElementById('col_post').value)
                 },
                 env_size: document.getElementById('env_size').value,
                 show_sender: document.getElementById('show_sender').checked,

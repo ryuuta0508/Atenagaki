@@ -44,7 +44,7 @@ def fetch_data():
         "sheet_name": "シート1",
         "start_row": 2,
         "end_row": 10,
-        "col_map": {"name": 0, "address": 1, "company": 2, "title":3}
+        "col_map": {"name": 0, "address": 1, "company": 2, "department":3,"post":4}
         "env_size": NAGA3 $$ KAKU2
     }
     """
@@ -55,7 +55,7 @@ def fetch_data():
     sheet_name = req.get('sheet_name',"Sheet1")
     start_row = int(req.get('start_row', 1))
     end_row = int(req.get('end_row', 100))
-    col_map = req.get('col_map') # {"name": 0, "address": 1, "company": 2, "title":3} 形式
+    col_map = req.get('col_map') # {"name": 0, "address": 1, "company": 2, "department":3, "post":4} 形式
     size_tup = size_dic[req.get('env_size')]
 
     try:
@@ -81,7 +81,8 @@ def fetch_data():
                 "name": get_val(col_map['name']),
                 "address": get_val(col_map['address']),
                 "company": get_val(col_map['company']),
-                "title": get_val(col_map['title'])
+                "department": get_val(col_map['department']),
+                "post": get_val(col_map['post'])
             }
 
             if item["name"]:
@@ -95,20 +96,67 @@ def fetch_data():
         for item in print_data:
             # --- 描画ロジック
 
+
+            #住所 
+            draw_vertical_text(
+                c,
+                convert_digit_h2k("　" + item["address"]),
+                size_tup[0]//24*22,
+                size_tup[1]//24*22,
+                font_name,
+                20
+                )      
+                  
+            #社名
+            draw_vertical_text(
+                c,
+                item["company"],
+                size_tup[0]//24*18,
+                size_tup[1]//24*20,
+                font_name,
+                25
+                )
+
+            #部署
+            draw_vertical_text(
+                c,
+                item["department"],
+                size_tup[0]//24*16,
+                size_tup[1]//24*18,
+                font_name,
+                20
+                )
+
+            #役職名
+            #4文字以下 => 名前の上
+            #5文字以上 => 名前の右
+            if len(item["post"]) <= 4:
+                post_lastY = draw_vertical_text(c,
+                                item["post"],
+                                size_tup[0]//24*11,
+                                size_tup[1]//24*20,
+                                font_name,
+                                20
+                                ) 
+            else:
+                draw_vertical_text(
+                    c,
+                    item["post"],
+                    size_tup[0]//24*14,
+                    size_tup[1]//24*20,
+                    font_name,
+                    20
+                    ) 
+            
             #名前
-            draw_vertical_text(c,
-                               item["name"]+"様",
-                               size_tup[0]//2,
-                               size_tup[1]//5*4,
-                               font_name,
-                               50)
-            #住所
-            draw_vertical_text(c,
-                               item["address"],
-                               size_tup[0]//6*5,
-                               size_tup[1]//6*5,
-                               font_name,
-                               20)            
+            draw_vertical_text(
+                c,
+                item["name"] + "様",
+                size_tup[0]//24*11,
+                post_lastY,
+                font_name,
+                50
+                )
 
             c.showPage()
             
@@ -128,9 +176,26 @@ def fetch_data():
             print("-----------------------------------")
             return jsonify({"error": str(e)}), 500
     
+def convert_digit_h2z(text:str):
+    """
+    半角数字を全角数字に変換
+    """
+    trans_table = str.maketrans("0123456789","０１２３４５６７８９")
+
+    return text.translate(trans_table)
+
+def convert_digit_h2k(text:str):
+    """
+    半角数字を漢数字に変換
+    """
+    trans_table = str.maketrans("0123456789","〇一二三四五六七八九")
+
+    return text.translate(trans_table)
+
 def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
     """
     指定座標(x,y)を起点にした方向の縦書きで描画。
+    return:ケツのY座標
     
     :param c: canvasオブジェクト
     :param text: 描画する文字列
@@ -141,7 +206,6 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
     :param line_spacing: 行間
     """
     c.setFont(font_name,font_size)
-
     #全角文字の幅を取得
     sample_width = c.stringWidth("あ", font_name, font_size)
     offset_x = x - (sample_width / 2)
@@ -157,9 +221,9 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
             # 90度回転させて描画
             c.saveState()
             # 文字の中心を軸に回転させるための補正
-            c.translate(offset_x + font_size * 0.4, current_y + font_size * 0.4)
+            c.translate(x - font_size * 0.4, current_y + font_size * 1)
             c.rotate(-90)
-            c.drawString(0, 0, char) 
+            c.drawString(0, 0, "ー" if char == "ー" else "—") 
             c.restoreState()  
         elif char in "（）()": # 括弧
             c.saveState()
@@ -172,9 +236,9 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
         else:
             # 通常の文字
             c.drawString(offset_x, current_y, char)
-        
         # Y座標を次に進める（ReportLabは下が0なのでマイナスする）
         current_y -= char_step
+    return current_y - char_step
 
 
 if __name__ == '__main__':
