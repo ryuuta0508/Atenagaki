@@ -1,3 +1,5 @@
+#郵便番号は別で調整できるようにする
+#1セットごとに別のPDFにする
 import os
 import io
 from flask import Flask, render_template, request, jsonify, send_file
@@ -45,8 +47,6 @@ def fetch_data():
         "start_row": 2,
         "end_row": 10,
         "col_map": {"name": 0, "address": 1, "company": 2, "department":3,"post":4}
-        "env_size": NAGA3 $$ KAKU2
-        "font_size_magnification": 1~500
     }
     """
     print("DEBUG : app.py fetch_data")
@@ -57,8 +57,6 @@ def fetch_data():
     start_row = int(req.get('start_row', 1))
     end_row = int(req.get('end_row', 100))
     col_map = req.get('col_map') # {"name": 0, "address": 1, "company": 2, "department":3, "post":4} 形式
-    size_tup = size_dic[req.get('env_size')]
-    font_size_magni = float(req.get('font_size_magnification')) / 100
 
     try:
         service = get_sheets_service()
@@ -84,119 +82,159 @@ def fetch_data():
                 "address": get_val(col_map['address']),
                 "company": get_val(col_map['company']),
                 "department": get_val(col_map['department']),
-                "post": get_val(col_map['post'])
+                "post": get_val(col_map['post']),
+                "zip": get_val(col_map['zip']).replace("-","")
             }
 
             if item["name"]:
                 print_data.append(item)
         print("CHECK POINT : app.py fetch_data created print data")
         print(f"debug : print_data = {print_data}")
-        
-        pdf_buffer = io.BytesIO()
-        c = canvas.Canvas(pdf_buffer, pagesize=size_tup)
-
-        for item in print_data:
-            # --- 描画ロジック
-            # もし[役職の文字数] <= 4
-            # ・中央に役職を書く＝＞ケツのY座標取得
-            # ・役職の下に名前を書く＝＞右隣のX座標を取得
-            # でなければ
-            # ・中央に名前を書く＝＞右隣のX座標を取得
-            # ・名前の右に役職を書く＝＞右隣のX座標を取得
-            # 右に部署名を書く＝＞右隣のX座標を取得
-            # 右に会社名を書く
-            # 右端に住所を書く
-
-            print(f"fontsizemagnification : {font_size_magni}")
-
-            #役職名
-            #4文字以下 => 名前の上
-            #5文字以上 => 名前の右
-            if len(item["post"]) <= 4:
-                #役職
-                result = draw_vertical_text(c,
-                            item["post"],
-                            size_tup[0]//24*12,
-                            size_tup[1]//24*20,
-                            font_name,
-                            20* font_size_magni
-                            ) 
-                #名前
-                result = draw_vertical_text(
-                            c,
-                            item["name"] + "様",
-                            size_tup[0]//24*12,
-                            result[1] - result[2],
-                            font_name,
-                            50* font_size_magni
-                            )
-            else:
-                #名前
-                result = draw_vertical_text(
-                            c,
-                            item["name"] + "様",
-                            size_tup[0]//24*12,
-                            size_tup[1]//24*18,
-                            font_name,
-                            50* font_size_magni
-                                )
-                #役職
-                result = draw_vertical_text(
-                            c,
-                            item["post"],
-                            result[0],
-                            size_tup[1]//24*20,
-                            font_name,
-                            20* font_size_magni
-                            )
-
-            #部署名
-            result = draw_vertical_text(
-                        c,
-                        item["department"],
-                        result[0],
-                        size_tup[1]//24*19,
-                        font_name,
-                        20* font_size_magni
-                        )
-            #会社名
-            result = draw_vertical_text(
-                        c,
-                        item["company"],
-                        result[0] + result[2]//2,
-                        size_tup[1]//24*20,
-                        font_name,
-                        25* font_size_magni
-                        )
-            
-            #住所
-            result = draw_vertical_text(
-                        c,
-                        convert_digit_h2k(item["address"]),
-                        size_tup[0]//24*22,
-                        size_tup[1]//24*21 + result[2],
-                        font_name,
-                        20* font_size_magni
-                        )
-
-            c.showPage()
-            
-        c.save()
-        pdf_buffer.seek(0)
-
-        return send_file(
-            pdf_buffer,
-            mimetype="application/pdf",
-            as_attachment=False
-        )
 
     except Exception as e:
-            # 詳細なエラー内容をプリントする
             print("---------- ERROR DETAILS ----------")
             print(e)
             print("-----------------------------------")
             return jsonify({"error": str(e)}), 500
+
+    return jsonify(print_data) #印刷するデータだけを返す
     
+@app.route('/generate_preview')
+def generate_preview():
+    #URL末尾のパラメータを取得(/generate_preview?name=XXX&address=XXX)
+    name = request.args.get("name","")
+    address = request.args.get("address","")
+    company = request.args.get("company","")
+    department = request.args.get("department","")
+    post = request.args.get("post","")
+    zip = request.args.get("zip","")
+    env_size = request.args.get("env_size","NAGA3")
+    raw_font_size = request.args.get("font_size", "100")
+    try:
+        # 文字列を数値に変換し、100% = 1.0 倍とする
+        font_factor = float(raw_font_size) / 100.0
+    except:
+        font_factor = 1.0
+    show_sender = request.args.get("show_sender","")
+    sender_name = request.args.get("sender_name","")
+    sender_address = request.args.get("sender_address","")
+    sender_zip = request.args.get("sender_zip","")
+
+    size_tup = size_dic.get(env_size, size_dic['NAGA3'])
+    pdf_buffer = io.BytesIO()
+    c = canvas.Canvas(pdf_buffer, pagesize=size_tup)
+
+    # --- 描画ロジック
+    # もし[役職の文字数] <= 4
+    # ・中央に役職を書く＝＞ケツのY座標取得
+    # ・役職の下に名前を書く＝＞右隣のX座標を取得
+    # でなければ
+    # ・中央に名前を書く＝＞右隣のX座標を取得
+    # ・名前の右に役職を書く＝＞右隣のX座標を取得
+    # 右に部署名を書く＝＞右隣のX座標を取得
+    # 右に会社名を書く
+    # 右端に住所を書く
+
+    print(f"fontsizemagnification : {font_factor}")
+
+    #役職名
+    #4文字以下 => 名前の上
+    #5文字以上 => 名前の右
+    if len(post) <= 4:
+        #役職
+        result = draw_vertical_text(c,
+                    post,
+                    size_tup[0]//24*12,
+                    size_tup[1]//24*20,
+                    font_name,
+                    20* font_factor
+                    ) 
+        #名前
+        result = draw_vertical_text(
+                    c,
+                    name + "様",
+                    size_tup[0]//24*12,
+                    result[1] - result[2],
+                    font_name,
+                    50* font_factor
+                    )
+    else:
+        #名前
+        result = draw_vertical_text(
+                    c,
+                    name + "様",
+                    size_tup[0]//24*12,
+                    size_tup[1]//24*18,
+                    font_name,
+                    50* font_factor
+                    )
+        #役職
+        result = draw_vertical_text(
+                    c,
+                    post,
+                    result[0],
+                    size_tup[1]//24*20,
+                    font_name,
+                    20* font_factor
+                    )
+    #部署名
+    result = draw_vertical_text(
+                c,
+                department,
+                result[0],
+                size_tup[1]//24*19,
+                font_name,
+                20* font_factor
+                )
+    #会社名
+    result = draw_vertical_text(
+                c,
+                company,
+                result[0] + result[2]//2,
+                size_tup[1]//24*20,
+                font_name,
+                25* font_factor
+                )
+    #住所
+    result = draw_vertical_text(
+                c,
+                convert_digit_h2k(address),
+                size_tup[0]//24*22,
+                size_tup[1]//24*21 + result[2],
+                font_name,
+                20* font_factor
+                )
+    c.showPage()#宛名欄
+    if show_sender:
+        result = draw_vertical_text(
+            c,
+            convert_digit_h2k(sender_name),
+            size_tup[0]//24*11,
+            size_tup[1]//24*4,
+            font_name,
+            30* font_factor,
+            align="bottom"
+            )
+        result = draw_vertical_text(
+            c,
+            convert_digit_h2k(sender_address),
+            size_tup[0]//24*13,
+            size_tup[1]//24*4,
+            font_name,
+            20* font_factor,
+            align="bottom"
+            )
+
+
+    c.save()
+    pdf_buffer.seek(0)
+
+    return send_file(
+        pdf_buffer,
+        mimetype="application/pdf",
+    )
+
+
 def convert_digit_h2z(text:str):
     """
     半角数字を全角数字に変換
@@ -214,7 +252,7 @@ def convert_digit_h2k(input:str):
     text = convert_digit_h2z(input)
     return text.translate(trans_table)
 
-def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
+def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2, align="top"):
     """
     指定座標(x,y)を起点にした方向の縦書きで描画。
     return:ケツのY座標
@@ -226,7 +264,9 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
     :param font_name: 使用するフォント名
     :param font_size: 使用するフォントサイズ
     :param line_spacing: 行間
+    :param align
     """
+    print(f"fontsize : {font_size}")
     c.setFont(font_name,font_size)
     #全角文字の幅を取得
     sample_width = c.stringWidth("あ", font_name, font_size)
@@ -235,8 +275,18 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2):
     # 文字ごとの幅
     char_step = font_size * line_spacing
 
+    #文全体の長さ
+    total_height = (len(text) - 1) * char_step + font_size
+
     # 一文字ずつ処理
-    current_y = y
+    # --- align設定に基づいて開始Y座標(current_y)を補正 ---
+    if align == "top":
+        current_y = y
+    elif align == "center":
+        current_y = y + (total_height / 2) - font_size # 起点を中心に
+    elif align == "bottom":
+        current_y = y + total_height - font_size # 指定したy
+        
     for char in text:
         # 特殊記号置換
         if char in "ー－-": # 長音やハイフン

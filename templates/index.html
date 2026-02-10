@@ -30,7 +30,7 @@
         <!-- 列指定 (col_map) -->
         <div class="mb-6">
             <h2 class="text-sm font-semibold text-gray-600 mb-2">3. 列の割り当て,半角アルファベット (A, B, C...)</h2>
-            <div class="grid grid-cols-5 gap-2">
+            <div class="grid grid-cols-3 gap-2">
                 <div>
                     <label class="block text-xs">氏名</label>
                     <input type="text" id="col_name" value="A" class="w-full p-2 border rounded uppercase text-center" placeholder="A">
@@ -51,6 +51,10 @@
                     <label class="block text-xs">役職</label>
                     <input type="text" id="col_post" value="E" class="w-full p-2 border rounded uppercase text-center" placeholder="E">
                 </div>
+                <div>
+                    <label class="block text-xs">郵便番号</label>
+                    <input type="text" id="col_zip" value="F" class="w-full p-2 border rounded uppercase text-center" placeholder="E">
+                </div>
             </div>
         </div>
 
@@ -66,7 +70,7 @@
         <div class="mb6 flex grid grid-cols-5">
             <div>
                 <label class="block text-xs">文字サイズ倍率(%)</label>
-                <input type="number" id="char_size_magni" value="100" class="w-full p-2 border text-center rounded" value="100" min="1" max="500">
+                <input type="number" id="font_size" value="100" class="w-full p-2 border text-center rounded" value="100" min="1" max="500">
             </div>
         </div>
         <div>
@@ -74,9 +78,18 @@
             <label class="flex items-center gap-2 mb-2">
                 <input type="checkbox" id="show_sender" checked> 差出人を表示する
             </label>
-            <textarea id="sender_address" class="w-full p-2 border rounded text-sm" rows="1">東京都... 〇〇株式会社</textarea>
-            <textarea id="sender_zip" class="w-full p-2 border rounded text-sm" rows="1">000-0000</textarea>
-            <textarea id="sender_name" class="w-full p-2 border rounded text-sm" rows="1">宛名 太郎</textarea>
+            <div>
+                <label class="block text-xs">住所</label>
+                <textarea id="sender_address" class="w-full p-2 border rounded text-sm" rows="1">東京都... 〇〇株式会社</textarea>
+            </div>
+            <div>
+                <label class="block text-xs">郵便番号</label>
+                <textarea id="sender_zip" class="w-full p-2 border rounded text-sm" rows="1">000-0000</textarea>
+            </div>
+            <div>
+                <label class="block text-xs">指名</label>
+                <textarea id="sender_name" class="w-full p-2 border rounded text-sm" rows="1">宛名 太郎</textarea>
+            </div>
         </div>
 
         <button onclick="generatePDF()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700">
@@ -88,8 +101,7 @@
         </div>
 
         <div id="preview_container" class="mt-8 hidden">
-            <h2 class="text-sm font-semibold text-gray-600 mb-2">プレビュー (別画面で開く場合はブラウザの機能を使用してください)</h2>
-            <iframe id="pdf_preview" class="w-full h-[1200px] border rounded shadow-inner"></iframe>
+            <iframe id="pdf_preview" class="w-full h-[600px] border rounded shadow-inner"></iframe>
         </div>
     </div>
 
@@ -121,7 +133,7 @@
                 return;
             }
 
-            const data = {
+            const sheetData = {
                 spreadsheet_id: spreadsheetID,
                 sheet_name: document.getElementById('sheet_name').value,
                 start_row: parseInt(document.getElementById('start_row').value),
@@ -132,35 +144,70 @@
                     address: columnLetterToIndex(document.getElementById('col_address').value),
                     company: columnLetterToIndex(document.getElementById('col_company').value),
                     department: columnLetterToIndex(document.getElementById('col_department').value),
-                    post: columnLetterToIndex(document.getElementById('col_post').value)
+                    post: columnLetterToIndex(document.getElementById('col_post').value),
+                    zip: columnLetterToIndex(document.getElementById('col_zip').value)
                 },
+            };
+
+            const settings = {
                 env_size: document.getElementById('env_size').value,
-                font_size_magnification: parseFloat(document.getElementById('char_size_magni').value),
+                font_size: parseFloat(document.getElementById('font_size').value),
                 show_sender: document.getElementById('show_sender').checked,
                 sender_address: document.getElementById('sender_address').value,
                 sender_zip: document.getElementById('sender_zip').value,
                 sender_name: document.getElementById('sender_name').value
-            };
+
+            }
 
             // 以降の fetch 処理は同じ
             const response = await fetch('/fetch_data', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                body: JSON.stringify(sheetData)
             });
 
-            if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const previewContainer = document.getElementById('preview_container');
-                const iframe = document.getElementById('pdf_preview');
-                previewContainer.classList.remove('hidden');
-                iframe.src = url; // iframeにPDFを表示
-            } else {
-                // 修正：サーバーから返ってきたエラーメッセージを表示する
-                const errorData = await response.json();
-                alert("エラーが発生しました: " + errorData.error);
+            if (!response.ok) {
+                alert("データの取得に失敗しました");
+                return;
             }
+
+            const printList = await response.json(); //宛名データの配列
+
+            const previewContainer = document.getElementById('preview_container');
+            previewContainer.innerHTML = '<h2 class="text-sm font-semibold text-gray-600 mb-2">プレビュー一覧</h2>';
+            previewContainer.classList.remove('hidden');
+            printList.forEach((item, index) => {
+                //pdf表示欄作成
+                const card = document.createElement('div');
+                card.className = "mb-10 p-4 bg-white border shadow-sm rounded"
+                //ラベル
+                const label = document.createElement('p');
+                label.className = "text-sm font-bold text-blue-600 mb-2";
+                label.innerText = `${index +1}件目: ${item.name}様`;
+                card.appendChild(label);
+                //iframe
+                const iframe = document.createElement("iframe");
+                iframe.className = "w-full h-[600px] border bg-gray-50";
+                //generate_previewルートにデータをパラメータとして渡す
+                const params = new URLSearchParams({
+                    name: item.name,
+                    address: item.address,
+                    company: item.title,
+                    department: item.department,
+                    post: item.post,
+                    zip: item.zip,
+                    env_size: settings.env_size,
+                    font_size: settings.font_size,
+                    show_sender: settings.show_sender,
+                    sender_name: settings.sender_name,
+                    sender_address: settings.sender_address,
+                    sender_zip: settings.sender_zip
+                });
+                iframe.src = `/generate_preview?${params.toString()}`;
+
+                card.appendChild(iframe);
+                previewContainer.appendChild(card);
+            });
             messageContainer.classList.add('hidden');
         }
     </script>
