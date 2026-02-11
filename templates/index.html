@@ -80,7 +80,11 @@
             </label>
             <div>
                 <label class="block text-xs">住所</label>
-                <textarea id="sender_address" class="w-full p-2 border rounded text-sm" rows="1">東京都... 〇〇株式会社</textarea>
+                <textarea id="sender_address" class="w-full p-2 border rounded text-sm" rows="1">東京都・・・・・〇〇番地</textarea>
+            </div>
+            <div>
+                <label class="block text-xs">社名(部署)</label>
+                <textarea id="sender_company" class="w-full p-2 border rounded text-sm" rows="1">〇〇〇〇株式会社 営業部</textarea>
             </div>
             <div>
                 <label class="block text-xs">郵便番号</label>
@@ -154,6 +158,7 @@
                 font_size: parseFloat(document.getElementById('font_size').value),
                 show_sender: document.getElementById('show_sender').checked,
                 sender_address: document.getElementById('sender_address').value,
+                sender_company: document.getElementById('sender_company').value,
                 sender_zip: document.getElementById('sender_zip').value,
                 sender_name: document.getElementById('sender_name').value
 
@@ -172,7 +177,7 @@
             }
 
             const printList = await response.json(); //宛名データの配列
-
+            console.log(printList);
             const previewContainer = document.getElementById('preview_container');
             previewContainer.innerHTML = '<h2 class="text-sm font-semibold text-gray-600 mb-2">プレビュー一覧</h2>';
             previewContainer.classList.remove('hidden');
@@ -192,7 +197,7 @@
                 const params = new URLSearchParams({
                     name: item.name,
                     address: item.address,
-                    company: item.title,
+                    company: item.company,
                     department: item.department,
                     post: item.post,
                     zip: item.zip,
@@ -201,8 +206,10 @@
                     show_sender: settings.show_sender,
                     sender_name: settings.sender_name,
                     sender_address: settings.sender_address,
+                    sender_company: settings.sender_company,
                     sender_zip: settings.sender_zip
                 });
+                console.log(item.company);
                 iframe.src = `/generate_preview?${params.toString()}`;
 
                 card.appendChild(iframe);

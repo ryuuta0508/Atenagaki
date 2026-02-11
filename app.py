@@ -118,6 +118,7 @@ def generate_preview():
     show_sender = request.args.get("show_sender","")
     sender_name = request.args.get("sender_name","")
     sender_address = request.args.get("sender_address","")
+    sender_company = request.args.get("sender_company","")
     sender_zip = request.args.get("sender_zip","")
 
     size_tup = size_dic.get(env_size, size_dic['NAGA3'])
@@ -134,8 +135,6 @@ def generate_preview():
     # 右に部署名を書く＝＞右隣のX座標を取得
     # 右に会社名を書く
     # 右端に住所を書く
-
-    print(f"fontsizemagnification : {font_factor}")
 
     #役職名
     #4文字以下 => 名前の上
@@ -217,8 +216,17 @@ def generate_preview():
             )
         result = draw_vertical_text(
             c,
-            convert_digit_h2k(sender_address),
+            convert_digit_h2k(sender_company),
             size_tup[0]//24*13,
+            size_tup[1]//24*4,
+            font_name,
+            20* font_factor,
+            align="bottom"
+            )
+        result = draw_vertical_text(
+            c,
+            convert_digit_h2k(sender_address),
+            result[0],
             size_tup[1]//24*4,
             font_name,
             20* font_factor,
@@ -266,7 +274,6 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2, align="t
     :param line_spacing: 行間
     :param align
     """
-    print(f"fontsize : {font_size}")
     c.setFont(font_name,font_size)
     #全角文字の幅を取得
     sample_width = c.stringWidth("あ", font_name, font_size)
