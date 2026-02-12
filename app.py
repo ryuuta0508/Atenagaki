@@ -203,11 +203,23 @@ def generate_preview():
                 font_name,
                 20* font_factor
                 )
+    #郵便番号
+    result = draw_horizontal_text(
+        c,
+        zip,
+        size_tup[0]//24*22,
+        size_tup[1]//24*24 ,
+        font_name,
+        20* font_factor,
+        line_spacing=1,
+        align="bottom"
+        )
+
     c.showPage()#宛名欄
     if show_sender:
         result = draw_vertical_text(
             c,
-            convert_digit_h2k(sender_name),
+            sender_name,
             size_tup[0]//24*11,
             size_tup[1]//24*4,
             font_name,
@@ -216,7 +228,7 @@ def generate_preview():
             )
         result = draw_vertical_text(
             c,
-            convert_digit_h2k(sender_company),
+            sender_company,
             size_tup[0]//24*13,
             size_tup[1]//24*4,
             font_name,
@@ -231,6 +243,16 @@ def generate_preview():
             font_name,
             20* font_factor,
             align="bottom"
+            )
+        result = draw_horizontal_text(
+            c,
+            sender_zip,
+            size_tup[0]//24*12,
+            result[3] + result[2]*3,
+            font_name,
+            15* font_factor,
+            line_spacing=1,
+            align="center"
             )
 
 
@@ -293,6 +315,7 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2, align="t
         current_y = y + (total_height / 2) - font_size # 起点を中心に
     elif align == "bottom":
         current_y = y + total_height - font_size # 指定したy
+    head_y = current_y
         
     for char in text:
         # 特殊記号置換
@@ -317,7 +340,48 @@ def draw_vertical_text(c,text,x,y,font_name,font_size,line_spacing=1.2, align="t
             c.drawString(offset_x, current_y, char)
         # Y座標を次に進める（ReportLabは下が0なのでマイナスする）
         current_y -= char_step
-    return x + sample_width, current_y - char_step, sample_width
+    return x + sample_width, current_y - char_step, sample_width, head_y
+
+def draw_horizontal_text(c,text,x,y,font_name,font_size,line_spacing=1.2, align="top"):
+    """
+    指定座標(x,y)を起点にした方向の縦書きで描画。
+    return:ケツのY座標
+    
+    :param c: canvasオブジェクト
+    :param text: 描画する文字列
+    :param x: 起点X
+    :param y: 起点Y
+    :param font_name: 使用するフォント名
+    :param font_size: 使用するフォントサイズ
+    :param line_spacing: 行間
+    :param align
+    """
+    c.setFont(font_name,font_size)
+    #全角文字の幅を取得
+    sample_height = c.stringWidth("あ", font_name, font_size)
+    offset_y = y - (sample_height / 2)
+
+    # 文字ごとの幅
+    char_step = font_size * line_spacing
+
+    #文全体の長さ
+    total_width = c.stringWidth(text, font_name, font_size) + (len(text) - 1) * line_spacing
+
+    # 一文字ずつ処理
+    # --- align設定に基づいて開始X座標(current_X)を補正 ---
+    if align == "top":
+        current_x = x
+    elif align == "center":
+        current_x = x - (total_width / 2) - font_size # 起点を中心に
+    elif align == "bottom":
+        current_x = x - total_width - font_size # 指定したy
+        
+    for char in text:
+        # 通常の文字
+        c.drawString(current_x, offset_y, char)
+        # X座標を次に進める
+        current_x += char_step
+    return current_x - char_step, y + sample_height, sample_height
 
 
 if __name__ == '__main__':
