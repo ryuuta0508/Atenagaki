@@ -2,6 +2,7 @@
 #1セットごとに別のPDFにする
 import os
 import io
+import zipfile
 from flask import Flask, render_template, request, jsonify, send_file
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -183,7 +184,7 @@ def generate_preview():
                 result[0],
                 size_tup[1]//24*19,
                 font_name,
-                20* font_factor
+                25* font_factor
                 )
     #会社名
     result = draw_vertical_text(
@@ -198,17 +199,17 @@ def generate_preview():
     result = draw_vertical_text(
                 c,
                 convert_digit_h2k(address),
-                size_tup[0]//24*22,
-                size_tup[1]//24*21 + result[2],
+                size_tup[0]//24*23,
+                result[3] + result[2] + 1.2,
                 font_name,
-                20* font_factor
+                25* font_factor
                 )
     #郵便番号
     result = draw_horizontal_text(
         c,
         zip,
         size_tup[0]//24*22,
-        size_tup[1]//24*24 ,
+        result[3] + result[2]*2,
         font_name,
         20* font_factor,
         line_spacing=1,
@@ -263,7 +264,6 @@ def generate_preview():
         pdf_buffer,
         mimetype="application/pdf",
     )
-
 
 def convert_digit_h2z(text:str):
     """
@@ -359,7 +359,7 @@ def draw_horizontal_text(c,text,x,y,font_name,font_size,line_spacing=1.2, align=
     c.setFont(font_name,font_size)
     #全角文字の幅を取得
     sample_height = c.stringWidth("あ", font_name, font_size)
-    offset_y = y - (sample_height / 2)
+    offset_y = y
 
     # 文字ごとの幅
     char_step = font_size * line_spacing
@@ -382,7 +382,6 @@ def draw_horizontal_text(c,text,x,y,font_name,font_size,line_spacing=1.2, align=
         # X座標を次に進める
         current_x += char_step
     return current_x - char_step, y + sample_height, sample_height
-
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
